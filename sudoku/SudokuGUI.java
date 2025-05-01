@@ -1,8 +1,7 @@
-
-// 📄 SudokuGUI.java
 package sudoku;
 
 import javax.swing.*;
+import javax.swing.border.MatteBorder;
 import java.awt.*;
 import java.util.Stack;
 
@@ -12,9 +11,12 @@ public class SudokuGUI extends JFrame {
     private SudokuGameManager gameManager;
     private JTextField[][] fields;
     private JTextField selectedField;
-    private JLabel xpLabel;
+    private JLabel xpLabel, timerLabel, mistakesLabel;
     private boolean pencilMode = false;
     private Stack<Move> undoStack = new Stack<>();
+    private int mistakes = 0;
+    private int secondsPassed = 0;
+    private Timer timer;
 
     public SudokuGUI(User user, String level) {
         this.user = user;
@@ -28,29 +30,22 @@ public class SudokuGUI extends JFrame {
         setLocationRelativeTo(null);
         setLayout(new BorderLayout());
 
-        JPanel boardPanel = new JPanel(new GridLayout(9, 9)) {
-            @Override
-            protected void paintComponent(Graphics g) {
-                super.paintComponent(g);
-                Graphics2D g2d = (Graphics2D) g;
-                g2d.setColor(Color.BLACK);
-                g2d.setStroke(new BasicStroke(3));
-                for (int i = 1; i < 9; i++) {
-                    if (i % 3 == 0) {
-                        g2d.drawLine(i * getWidth() / 9, 0, i * getWidth() / 9, getHeight());
-                        g2d.drawLine(0, i * getHeight() / 9, getWidth(), i * getHeight() / 9);
-                    }
-                }
-            }
-        };
-
+        // === Board Panel ===
+        JPanel boardPanel = new JPanel(new GridLayout(9, 9));
+        boardPanel.setPreferredSize(new Dimension(450, 450));
         Font font = new Font("SansSerif", Font.BOLD, 20);
+
         for (int row = 0; row < 9; row++) {
             for (int col = 0; col < 9; col++) {
                 JTextField field = new JTextField();
                 field.setHorizontalAlignment(JTextField.CENTER);
                 field.setFont(font);
-                field.setBorder(BorderFactory.createLineBorder(Color.GRAY));
+
+                int top = (row % 3 == 0) ? 3 : 1;
+                int left = (col % 3 == 0) ? 3 : 1;
+                int bottom = (row == 8) ? 3 : 1;
+                int right = (col == 8) ? 3 : 1;
+                field.setBorder(new MatteBorder(top, left, bottom, right, Color.BLACK));
 
                 SudokuCell cell = gameManager.getBoard().getCell(row, col);
                 if (cell.isFixed()) {
@@ -61,7 +56,6 @@ public class SudokuGUI extends JFrame {
                     field.setEditable(false);
                     field.setBackground(Color.WHITE);
                     field.addMouseListener(new java.awt.event.MouseAdapter() {
-                        @Override
                         public void mouseClicked(java.awt.event.MouseEvent e) {
                             selectedField = field;
                         }
@@ -73,8 +67,11 @@ public class SudokuGUI extends JFrame {
             }
         }
 
-        JPanel infoPanel = new JPanel(new GridLayout(1, 2));
+        // === Info Panel ===
+        JPanel infoPanel = new JPanel(new GridLayout(1, 4));
         xpLabel = new JLabel("XP: " + user.getXP());
+        timerLabel = new JLabel("Time: 0s");
+        mistakesLabel = new JLabel("Mistakes: 0");
         JButton hintButton = new JButton("Hint (-5 XP)");
 
         hintButton.addActionListener(e -> {
@@ -88,7 +85,10 @@ public class SudokuGUI extends JFrame {
 
         infoPanel.add(xpLabel);
         infoPanel.add(hintButton);
+        infoPanel.add(timerLabel);
+        infoPanel.add(mistakesLabel);
 
+        // === Buttons Panel ===
         JPanel buttonPanel = new JPanel(new GridLayout(2, 6, 5, 5));
         for (int i = 1; i <= 9; i++) {
             int number = i;
@@ -121,10 +121,21 @@ public class SudokuGUI extends JFrame {
         buttonPanel.add(eraseButton);
         buttonPanel.add(backButton);
 
+        // Add all panels to frame
         add(boardPanel, BorderLayout.CENTER);
         add(infoPanel, BorderLayout.NORTH);
         add(buttonPanel, BorderLayout.SOUTH);
+
+        startTimer();
         setVisible(true);
+    }
+
+    private void startTimer() {
+        timer = new Timer(1000, e -> {
+            secondsPassed++;
+            timerLabel.setText("Time: " + secondsPassed + "s");
+        });
+        timer.start();
     }
 
     private void fillNumber(int number) {
@@ -148,7 +159,9 @@ public class SudokuGUI extends JFrame {
                         fields[row][col].setForeground(Color.BLACK);
                         fields[row][col].setFont(new Font("SansSerif", Font.BOLD, 20));
                         gameManager.getBoard().setCellValue(row, col, number);
+
                         if (gameManager.isGameComplete()) {
+                            timer.stop();
                             user.addXP(10);
                             UserManager.saveUsers();
                             JOptionPane.showMessageDialog(this, "You win! XP +10");
@@ -158,6 +171,8 @@ public class SudokuGUI extends JFrame {
                     } else {
                         fields[row][col].setText(String.valueOf(number));
                         fields[row][col].setBackground(new Color(255, 180, 180));
+                        mistakes++;
+                        mistakesLabel.setText("Mistakes: " + mistakes);
                     }
                     return;
                 }

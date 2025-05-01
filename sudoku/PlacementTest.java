@@ -1,7 +1,8 @@
-// 📄 PlacementTest.java
+// 📄 PlacementTest.java (مُحدث مع حدود 3x3 باستخدام MatteBorder)
 package sudoku;
 
 import javax.swing.*;
+import javax.swing.border.MatteBorder;
 import java.awt.*;
 import java.util.Stack;
 
@@ -21,7 +22,7 @@ public class PlacementTest extends JFrame {
     public PlacementTest(User user) {
         this.user = user;
         this.fields = new JTextField[9][9];
-        this.gameManager = new SudokuGameManager(40); // normal difficulty
+        this.gameManager = new SudokuGameManager(40);
 
         setTitle("Placement Test");
         setSize(700, 800);
@@ -29,21 +30,8 @@ public class PlacementTest extends JFrame {
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLayout(new BorderLayout());
 
-        JPanel boardPanel = new JPanel(new GridLayout(9, 9)) {
-            @Override
-            protected void paintComponent(Graphics g) {
-                super.paintComponent(g);
-                Graphics2D g2d = (Graphics2D) g;
-                g2d.setColor(Color.BLACK);
-                g2d.setStroke(new BasicStroke(3));
-                for (int i = 1; i < 9; i++) {
-                    if (i % 3 == 0) {
-                        g2d.drawLine(i * getWidth() / 9, 0, i * getWidth() / 9, getHeight());
-                        g2d.drawLine(0, i * getHeight() / 9, getWidth(), i * getHeight() / 9);
-                    }
-                }
-            }
-        };
+        JPanel boardPanel = new JPanel(new GridLayout(9, 9));
+        boardPanel.setPreferredSize(new Dimension(450, 450));
 
         Font font = new Font("SansSerif", Font.BOLD, 20);
 
@@ -52,7 +40,13 @@ public class PlacementTest extends JFrame {
                 JTextField field = new JTextField();
                 field.setHorizontalAlignment(JTextField.CENTER);
                 field.setFont(font);
-                field.setBorder(BorderFactory.createLineBorder(Color.GRAY));
+
+                // حدود عريضة بين مربعات 3×3
+                int top = (row % 3 == 0) ? 3 : 1;
+                int left = (col % 3 == 0) ? 3 : 1;
+                int bottom = (row == 8) ? 3 : 1;
+                int right = (col == 8) ? 3 : 1;
+                field.setBorder(BorderFactory.createMatteBorder(top, left, bottom, right, Color.BLACK));
 
                 SudokuCell cell = gameManager.getBoard().getCell(row, col);
                 if (cell.isFixed()) {
@@ -203,7 +197,3 @@ public class PlacementTest extends JFrame {
         }
     }
 }
-
-// 📄 SudokuGUI.java
-// ملاحظة: تم إرسال كوده الكامل سابقًا، وسأتابع الآن بإضافته هنا عند طلبك.
-
